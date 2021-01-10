@@ -1,0 +1,8 @@
+---
+- name: enable and restart nginx service
+  systemd:
+    name: nginx
+    state: restarted
+    enabled: yes
+    daemon_reload: yes
+  ignore_errors: yes

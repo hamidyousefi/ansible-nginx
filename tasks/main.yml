@@ -1,0 +1,60 @@
+---
+- name: install necessary packages
+  apt:
+    name:
+      - nginx
+      - certbot
+      - python-certbot-nginx
+    update_cache: yes
+    state: present
+
+- name: remove default enabled site
+  file:
+    path: "{{ item }}"
+    state: absent
+  with_items:
+    - /etc/nginx/sites-enabled/default
+    - /etc/nginx/sites-available/default
+
+- name: create nginx main config file
+  template:
+    src: "{{ item.template_path }}"
+    dest: "/etc/nginx/{{ item.template_path | basename | splitext | first }}"
+    owner: root
+    group: root
+    mode: '0644'
+  with_items: "{{ nginx.config }}"
+  notify: enable and restart nginx service
+
+- name: create nginx sub config files
+  template:
+    src: "{{ item.template_path }}"
+    dest: "/etc/nginx/conf.d/{{ item.template_path | basename | splitext | first }}"
+    owner: root
+    group: root
+    mode: '0644'
+  with_items: "{{ nginx.configs }}"
+  when:
+    - nginx.configs is defined
+    - nginx.configs | length > 0
+  notify: enable and restart nginx service
+
+- name: create nginx sites config files
+  template:
+    src: "{{ item.template_path }}"
+    dest: "/etc/nginx/sites-available/{{ item.template_path | basename | splitext | first }}"
+    owner: root
+    group: root
+    mode: '0644'
+  with_items: "{{ nginx.sites }}"
+  notify: enable and restart nginx service
+
+- name: enable nginx sites config files
+  file:
+    src: "/etc/nginx/sites-available/{{ item.template_path | basename | splitext | first }}"
+    dest: "/etc/nginx/sites-enabled/{{ item.template_path | basename | splitext | first }}"
+    state: link
+    owner: root
+    group: root
+  with_items: "{{ nginx.sites }}"
+  notify: enable and restart nginx service
