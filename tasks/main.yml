@@ -1,11 +1,9 @@
 ---
 - name: install necessary packages
   apt:
-    name:
-      - nginx
-      - certbot
-      - python-certbot-nginx
+    name: nginx
     update_cache: yes
+    force_apt_get: yes
     state: present
 
 - name: remove default enabled site
@@ -24,6 +22,9 @@
     group: root
     mode: '0644'
   with_items: "{{ nginx.config }}"
+  when:
+    - nginx.config is defined
+    - nginx.config | length > 0
   notify: enable and restart nginx service
 
 - name: create nginx sub config files
@@ -47,6 +48,9 @@
     group: root
     mode: '0644'
   with_items: "{{ nginx.sites }}"
+  when:
+    - nginx.sites is defined
+    - nginx.sites | length > 0
   notify: enable and restart nginx service
 
 - name: enable nginx sites config files
@@ -57,4 +61,7 @@
     owner: root
     group: root
   with_items: "{{ nginx.sites }}"
+  when:
+    - nginx.sites is defined
+    - nginx.sites | length > 0
   notify: enable and restart nginx service
